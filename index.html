@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sui NFT Mint</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import { WalletProvider, useWallet } from "https://unpkg.com/@mysten/wallet-kit?module";
+    window.walletModule = { WalletProvider, useWallet };
+  </script>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-black text-white min-h-screen flex items-center justify-center p-6">
+  <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl shadow-xl p-6 max-w-md w-full text-center">
+    <img src="https://iili.io/38erS5B.jpg" alt="NFT Image" class="rounded-xl w-full mb-4">
+    
+    <h1 class="text-3xl font-bold mb-2">🚀 Sui NFT Mint</h1>
+    <p class="text-gray-300 mb-4">Limited NFTs on the Sui blockchain. Claim yours today!</p>
+    <p class="text-lg font-semibold text-green-400 mb-2">💰 Price: 1 SUI</p>
+    <p id="countdown" class="text-sm text-yellow-300 mb-4">Mint starts in: --:--:--</p>
+    
+    <div class="w-full bg-gray-700 rounded-full h-4 mb-4">
+      <div id="progressBar" class="bg-green-500 h-4 rounded-full" style="width: 0%;"></div>
+    </div>
+    <p id="progressText" class="text-sm text-gray-400 mb-4">Minted: 0 / 3333</p>
+
+    <button id="connectWallet" class="bg-purple-600 hover:bg-purple-700 w-full py-2 rounded-xl mb-3 font-semibold">
+      Connect Sui Wallet
+    </button>
+
+    <button id="mintNft" disabled class="bg-green-600 hover:bg-green-700 w-full py-2 rounded-xl font-semibold">
+      Mint NFT
+    </button>
+    <p id="status" class="text-sm text-gray-400 mt-4"></p>
+  </div>
+
+  <script type="module">
+    import { WalletAdapterNetwork } from 'https://unpkg.com/@mysten/wallet-standard?module';
+    import { SuiClient, getFullnodeUrl } from 'https://unpkg.com/@mysten/sui.js?module';
+
+    let wallet = null;
+    let minted = 0;
+    const totalSupply = 3333;
+
+    const connectBtn = document.getElementById('connectWallet');
+    const mintBtn = document.getElementById('mintNft');
+    const statusText = document.getElementById('status');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const countdownEl = document.getElementById('countdown');
+
+    // Timer setup
+    const mintStartTime = new Date().getTime() + 2 * 60 * 1000;
+    const timerInterval = setInterval(updateTimer, 1000);
+    updateProgress();
+
+    function updateTimer() {
+      const now = new Date().getTime();
+      const distance = mintStartTime - now;
+      if (distance > 0) {
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        countdownEl.textContent = `Mint starts in: ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        mintBtn.disabled = true;
+      } else {
+        countdownEl.textContent = "🎉 Mint is live!";
+        mintBtn.disabled = false;
+        clearInterval(timerInterval);
+      }
+    }
+
+    function updateProgress() {
+      const percent = (minted / totalSupply) * 3333;
+      progressBar.style.width = percent + '%';
+      progressText.textContent = `Minted: ${minted} / ${totalSupply}`;
+    }
+
+    // Wallet connect
+    connectBtn.addEventListener('click', async () => {
+      try {
+        if (!window.suiWallet) {
+          alert("Install Sui Wallet (https://wallet.sui.io or Surf Wallet)");
+          return;
+        }
+        const accounts = await window.suiWallet.requestAccounts();
+        wallet = window.suiWallet;
+        connectBtn.textContent = "Wallet Connected ✅";
+        connectBtn.classList.replace('bg-purple-600', 'bg-green-600');
+        statusText.textContent = `Connected: ${accounts[0].slice(0, 6)}...`;
+      } catch (e) {
+        console.error(e);
+        statusText.textContent = "Wallet connection failed.";
+      }
+    });
+
+    // Dummy mint
+    mintBtn.addEventListener('click', async () => {
+      if (!wallet) return;
+      try {
+        // Dummy transaction: request test SUI object as mint simulation
+        const tx = {
+          kind: "paySui",
+          data: {
+            recipient: (await wallet.requestAccounts())[0],
+            amount: 100,
+          }
+        };
+        statusText.textContent = "Minting...";
+        // You can replace this with real `moveCall` mint tx
+        setTimeout(() => {
+          minted++;
+          updateProgress();
+          statusText.textContent = "✅ Mint simulated!";
+        }, 1500);
+      } catch (e) {
+        console.error(e);
+        statusText.textContent = "❌ Mint failed.";
+      }
+    });
+  </script>
+</body>
+</html>
